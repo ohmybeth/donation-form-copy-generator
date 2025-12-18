@@ -1,2 +1,2 @@
-# event-script-generator
-AI Artifact to generate fundraising scripts for Tergar International events.
+# donation form copy generator
+AI Artifact to generate short copy for Tergar donation form pages.
