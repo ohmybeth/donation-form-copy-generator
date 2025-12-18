@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tergar Donation Copy Generator</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #ffffff;
+        }
+        #root {
+            min-height: 100vh;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Lucide icons as inline SVG components
+        const Heart = ({ style }) => (
+            <svg style={style} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+        );
+
+        const Copy = ({ size }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+        );
+
+        const Check = ({ size }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        );
+
+        const Loader2 = ({ style, size }) => (
+            <svg style={{...style, animation: 'spin 1s linear infinite'}} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+            </svg>
+        );
+
+        function DonationCopyAIGenerator() {
+            const [formData, setFormData] = useState({
+                campaignType: 'retreat',
+                eventName: '',
+                campaignDescription: '',
+                eventDate: '',
+                flywheelStage: 'deepen',
+                specificGoal: '',
+                impactArea: 'general',
+                includeUrgency: false,
+                matchType: '1:1',
+                matchAmount: ''
+            });
+            
+            const [generatedCopy, setGeneratedCopy] = useState('');
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [copied, setCopied] = useState(false);
+            const [error, setError] = useState('');
+
+            const campaignTypes = [
+                { value: 'retreat', label: 'Retreat/Event' },
+                { value: 'year-end', label: 'Year-End Campaign' },
+                { value: 'giving-tuesday', label: 'Giving Tuesday' },
+                { value: 'monthly', label: 'Monthly Giving' },
+                { value: 'matching', label: 'Matching Campaign' },
+                { value: 'accessibility', label: 'Financial Accessibility Fund' },
+                { value: 'special-project', label: 'Special Project' }
+            ];
+
+            const impactAreas = [
+                { value: 'general', label: 'General Support' },
+                { value: 'program-development', label: 'Program & Curriculum Development' },
+                { value: 'accessibility', label: 'Financial Accessibility' },
+                { value: 'translation', label: 'Translation & Multi-language Access' },
+                { value: 'teacher-training', label: 'Teacher Training' },
+                { value: 'technology', label: 'Technology & Platform' },
+                { value: 'community', label: 'Community Building' }
+            ];
+
+            const flywheelStages = [
+                { value: 'connect', label: 'Connect (Awareness & Inspiration)' },
+                { value: 'start', label: 'Start (AAM)' },
+                { value: 'deepen', label: 'Deepen (Joy of Living)' },
+                { value: 'expand', label: 'Expand (Path of Liberation/Exploring Buddhism)' },
+                { value: 'service', label: 'Service (Teaching, Volunteering, Giving)' },
+                { value: 'mixed', label: 'Mixed Audience' }
+            ];
+
+            const generateCopy = async () => {
+                setIsGenerating(true);
+                setError('');
+                
+                try {
+                    let prompt = `You are writing donation page copy for Tergar International, a Buddhist meditation nonprofit led by Yongey Mingyur Rinpoche. The mission is to make ancient wisdom accessible to the modern world.
+
+CRITICAL INSTRUCTIONS:
+- Write in a warm, personal tone reflecting Mingyur Rinpoche's teaching style
+- Keep copy concise but allow more length for complex campaigns (Monthly Giving, Matching Campaigns)
+- Focus on DONOR IMPACT, not organizational needs
+- Use "Your gift enables..." language, not "We need..." language
+- People are on the donation page already - reinforce their decision, don't re-sell the event
+- DO NOT repeat or rehash the campaign/event description - use it only to inform your word choices and themes
+- NEVER use the word "seekers" - Tergar International does not use this term
+- Generate TWO pieces: (1) A short headline (4-8 words), and (2) The body copy
+- Use ACCESSIBLE language - avoid heavy Buddhist terminology (sangha, merit, tsok, etc.) - make it welcoming to all
+- You can reference Buddhist teachings/teachers by name, but keep the overall language universal and warm
+
+CAMPAIGN TYPE: ${formData.campaignType}
+${formData.eventName ? `EVENT NAME: ${formData.eventName}` : ''}
+
+${formData.campaignDescription ? `CAMPAIGN/EVENT CONTEXT (use this to inform language and themes, but DO NOT copy it):
+${formData.campaignDescription}` : ''}
+
+PRIMARY IMPACT AREA: ${impactAreas.find(a => a.value === formData.impactArea)?.label}
+
+FLYWHEEL STAGE: ${flywheelStages.find(s => s.value === formData.flywheelStage)?.label}
+- Connect/Start stages: Very soft language, no direct asks
+- Deepen stage: Community-focused messaging
+- Expand/Service stages: Values-based appeals about preserving lineage teachings
+
+${formData.specificGoal ? `SPECIFIC GOAL: ${formData.specificGoal}` : ''}
+
+`;
+
+                    if (formData.campaignType === 'matching') {
+                        if (formData.matchType === 'specific' && formData.matchAmount) {
+                            prompt += `MATCHING DETAILS: Every gift up to $${formData.matchAmount} will be matched dollar-for-dollar\n`;
+                        } else if (formData.matchType === '2:1') {
+                            prompt += `MATCHING DETAILS: 2:1 match - every dollar becomes three dollars\n`;
+                        } else {
+                            prompt += `MATCHING DETAILS: 1:1 match - gifts doubled dollar-for-dollar\n`;
+                        }
+                    }
+
+                    if (formData.includeUrgency && formData.eventDate) {
+                        prompt += `TIME URGENCY: Include that gifts must be made by ${formData.eventDate}\n`;
+                    }
+
+                    prompt += `
+CAMPAIGN-SPECIFIC GUIDANCE:
+`;
+
+                    if (formData.campaignType === 'retreat' && formData.eventName) {
+                        prompt += `- Reference that support makes ${formData.eventName} possible\n`;
+                    } else if (formData.campaignType === 'year-end') {
+                        prompt += `- Reflect on the year of bringing ancient wisdom to modern world\n`;
+                    } else if (formData.campaignType === 'giving-tuesday') {
+                        prompt += `- Brief Giving Tuesday framing\n`;
+                    } else if (formData.campaignType === 'monthly') {
+                        prompt += `- Emphasize becoming a "Steadfast Supporter" with sustained giving\n- Explain how monthly gifts create foundation for planning\n- Note that monthly donors form the base of the community\n- This needs 4-5 sentences to explain the value\n`;
+                    } else if (formData.campaignType === 'accessibility') {
+                        prompt += `- Focus on removing financial barriers\n`;
+                    }
+
+                    prompt += `
+HEADLINE GUIDANCE:
+- 4-8 words, action-oriented DONATION call-to-action
+- NOT about what the event/program teaches - about WHY TO GIVE
+- Should be a call to support/share/sustain/help - make it about the act of giving
+- Examples: "Share the Gift of Wisdom", "Help Others Discover Inner Peace", "Sustain These Teachings for All", "Support Transformation Worldwide"
+- The headline is asking people to donate - it's not describing the program
+
+Now write the donation page content in this exact format:
+
+HEADLINE: [Your 4-8 word DONATION call-to-action here]
+
+BODY:
+[Your body copy here - 2-3 sentences for simple campaigns, 4-5 sentences for complex campaigns like monthly giving. Always end with "Thank you for being part of this journey." or similar warm closing.]
+
+Write ONLY in the format above, nothing else:`;
+
+                    const response = await fetch("https://api.anthropic.com/v1/messages", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            model: "claude-sonnet-4-20250514",
+                            max_tokens: 500,
+                            messages: [
+                                { role: "user", content: prompt }
+                            ]
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API request failed: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    const rawCopy = data.content[0].text.trim();
+                    
+                    const headlineMatch = rawCopy.match(/HEADLINE:\s*(.+)/i);
+                    const bodyMatch = rawCopy.match(/BODY:\s*([\s\S]+)/i);
+                    
+                    let parsedCopy = rawCopy;
+                    if (headlineMatch && bodyMatch) {
+                        const headline = headlineMatch[1].trim();
+                        const body = bodyMatch[1].trim();
+                        parsedCopy = `HEADLINE: ${headline}\n\nBODY:\n${body}`;
+                    }
+                    
+                    setGeneratedCopy(parsedCopy);
+                } catch (err) {
+                    console.error("Error generating copy:", err);
+                    setError("Failed to generate copy. Please try again.");
+                } finally {
+                    setIsGenerating(false);
+                }
+            };
+
+            const copyToClipboard = () => {
+                navigator.clipboard.writeText(generatedCopy);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            };
+
+            return (
+                <div style={{ 
+                    maxWidth: '900px', 
+                    margin: '0 auto', 
+                    padding: '2rem',
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                }}>
+                    <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.75rem',
+                        marginBottom: '0.5rem'
+                    }}>
+                        <Heart style={{ color: '#dc2626', width: '32px', height: '32px' }} />
+                        <h1 style={{ 
+                            fontSize: '1.875rem', 
+                            fontWeight: 'bold',
+                            margin: 0
+                        }}>
+                            AI Donation Copy Generator
+                        </h1>
+                    </div>
+                    
+                    <p style={{ 
+                        color: '#6b7280', 
+                        marginBottom: '2rem',
+                        fontSize: '0.95rem'
+                    }}>
+                        Powered by Claude AI - generates contextual donation page copy for Tergar campaigns
+                    </p>
+
+                    <div style={{
+                        display: 'grid',
+                        gap: '1.5rem',
+                        marginBottom: '2rem'
+                    }}>
+                        {/* Campaign Type */}
+                        <div>
+                            <label style={{ 
+                                display: 'block', 
+                                fontWeight: '600',
+                                marginBottom: '0.5rem',
+                                fontSize: '0.9rem'
+                            }}>
+                                Campaign Type
+                            </label>
+                            <select
+                                value={formData.campaignType}
+                                onChange={(e) => setFormData({...formData, campaignType: e.target.value})}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    borderRadius: '0.5rem',
+                                    border: '1px solid #d1d5db',
+                                    fontSize: '0.95rem'
+                                }}
+                            >
+                                {campaignTypes.map(type => (
+                                    <option key={type.value} value={type.value}>{type.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Event Name */}
+                        {formData.campaignType === 'retreat' && (
+                            <div>
+                                <label style={{ 
+                                    display: 'block', 
+                                    fontWeight: '600',
+                                    marginBottom: '0.5rem',
+                                    fontSize: '0.9rem'
+                                }}>
+                                    Event Name
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.eventName}
+                                    onChange={(e) => setFormData({...formData, eventName: e.target.value})}
+                                    placeholder="e.g., Summer Meditation Retreat"
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem',
+                                        borderRadius: '0.5rem',
+                                        border: '1px solid #d1d5db',
+                                        fontSize: '0.95rem'
+                                    }}
+                                />
+                            </div>
+                        )}
+
+                        {/* Matching Campaign Options */}
+                        {formData.campaignType === 'matching' && (
+                            <>
+                                <div>
+                                    <label style={{ 
+                                        display: 'block', 
+                                        fontWeight: '600',
+                                        marginBottom: '0.5rem',
+                                        fontSize: '0.9rem'
+                                    }}>
+                                        Match Type
+                                    </label>
+                                    <select
+                                        value={formData.matchType}
+                                        onChange={(e) => setFormData({...formData, matchType: e.target.value})}
+                                        style={{
+                                            width: '100%',
+                                            padding: '0.75rem',
+                                            borderRadius: '0.5rem',
+                                            border: '1px solid #d1d5db',
+                                            fontSize: '0.95rem'
+                                        }}
+                                    >
+                                        <option value="1:1">1:1 Match (dollar-for-dollar)</option>
+                                        <option value="2:1">2:1 Match (every $1 becomes $3)</option>
+                                        <option value="specific">Specific Dollar Amount Cap</option>
+                                    </select>
+                                </div>
+                                
+                                {formData.matchType === 'specific' && (
+                                    <div>
+                                        <label style={{ 
+                                            display: 'block', 
+                                            fontWeight: '600',
+                                            marginBottom: '0.5rem',
+                                            fontSize: '0.9rem'
+                                        }}>
+                                            Match Cap Amount
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={formData.matchAmount}
+                                            onChange={(e) => setFormData({...formData, matchAmount: e.target.value})}
+                                            placeholder="e.g., 25000"
+                                            style={{
+                                                width: '100%',
+                                                padding: '0.75rem',
+                                                borderRadius: '0.5rem',
+                                                border: '1px solid #d1d5db',
+                                                fontSize: '0.95rem'
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {/* Campaign Description */}
+                        <div>
+                            <label style={{ 
+                                display: 'block', 
+                                fontWeight: '600',
+                                marginBottom: '0.5rem',
+                                fontSize: '0.9rem'
+                            }}>
+                                Event/Campaign Context (for AI reference)
+                            </label>
+                            <textarea
+                                value={formData.campaignDescription}
+                                onChange={(e) => setFormData({...formData, campaignDescription: e.target.value})}
+                                placeholder="Paste your event/campaign description here. The AI will read this to understand themes, language, and context, then generate appropriate donation copy without repeating this text."
+                                rows="4"
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    borderRadius: '0.5rem',
+                                    border: '1px solid #d1d5db',
+                                    fontSize: '0.95rem',
+                                    fontFamily: 'inherit',
+                                    resize: 'vertical'
+                                }}
+                            />
+                        </div>
+
+                        {/* Flywheel Stage */}
+                        <div>
+                            <label style={{ 
+                                display: 'block', 
+                                fontWeight: '600',
+                                marginBottom: '0.5rem',
+                                fontSize: '0.9rem'
+                            }}>
+                                Primary Flywheel Stage
+                            </label>
+                            <select
+                                value={formData.flywheelStage}
+                                onChange={(e) => setFormData({...formData, flywheelStage: e.target.value})}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    borderRadius: '0.5rem',
+                                    border: '1px solid #d1d5db',
+                                    fontSize: '0.95rem'
+                                }}
+                            >
+                                {flywheelStages.map(stage => (
+                                    <option key={stage.value} value={stage.value}>{stage.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Impact Area */}
+                        <div>
+                            <label style={{ 
+                                display: 'block', 
+                                fontWeight: '600',
+                                marginBottom: '0.5rem',
+                                fontSize: '0.9rem'
+                            }}>
+                                Primary Impact Area
+                            </label>
+                            <select
+                                value={formData.impactArea}
+                                onChange={(e) => setFormData({...formData, impactArea: e.target.value})}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    borderRadius: '0.5rem',
+                                    border: '1px solid #d1d5db',
+                                    fontSize: '0.95rem'
+                                }}
+                            >
+                                {impactAreas.map(area => (
+                                    <option key={area.value} value={area.value}>{area.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Specific Goal */}
+                        <div>
+                            <label style={{ 
+                                display: 'block', 
+                                fontWeight: '600',
+                                marginBottom: '0.5rem',
+                                fontSize: '0.9rem'
+                            }}>
+                                Specific Goal or Detail (optional)
+                            </label>
+                            <textarea
+                                value={formData.specificGoal}
+                                onChange={(e) => setFormData({...formData, specificGoal: e.target.value})}
+                                placeholder="e.g., We hope to raise $15,000 to provide financial assistance for 30 practitioners"
+                                rows="2"
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    borderRadius: '0.5rem',
+                                    border: '1px solid #d1d5db',
+                                    fontSize: '0.95rem',
+                                    fontFamily: 'inherit',
+                                    resize: 'vertical'
+                                }}
+                            />
+                        </div>
+
+                        {/* Urgency Option */}
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                            <input
+                                type="checkbox"
+                                id="urgency"
+                                checked={formData.includeUrgency}
+                                onChange={(e) => setFormData({...formData, includeUrgency: e.target.checked})}
+                                style={{ marginTop: '0.25rem' }}
+                            />
+                            <div style={{ flex: 1 }}>
+                                <label htmlFor="urgency" style={{ 
+                                    fontWeight: '600',
+                                    fontSize: '0.9rem',
+                                    display: 'block',
+                                    marginBottom: '0.25rem',
+                                    cursor: 'pointer'
+                                }}>
+                                    Add time-based urgency
+                                </label>
+                                {formData.includeUrgency && (
+                                    <input
+                                        type="text"
+                                        value={formData.eventDate}
+                                        onChange={(e) => setFormData({...formData, eventDate: e.target.value})}
+                                        placeholder="e.g., December 31st"
+                                        style={{
+                                            width: '100%',
+                                            padding: '0.5rem',
+                                            borderRadius: '0.375rem',
+                                            border: '1px solid #d1d5db',
+                                            fontSize: '0.9rem',
+                                            marginTop: '0.5rem'
+                                        }}
+                                    />
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Generate Button */}
+                        <button
+                            onClick={generateCopy}
+                            disabled={isGenerating}
+                            style={{
+                                backgroundColor: isGenerating ? '#9ca3af' : '#dc2626',
+                                color: 'white',
+                                padding: '0.875rem 1.5rem',
+                                borderRadius: '0.5rem',
+                                border: 'none',
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                cursor: isGenerating ? 'not-allowed' : 'pointer',
+                                transition: 'background-color 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem'
+                            }}
+                            onMouseOver={(e) => !isGenerating && (e.currentTarget.style.backgroundColor = '#b91c1c')}
+                            onMouseOut={(e) => !isGenerating && (e.currentTarget.style.backgroundColor = '#dc2626')}
+                        >
+                            {isGenerating ? (
+                                <>
+                                    <Loader2 size={20} />
+                                    Generating...
+                                </>
+                            ) : (
+                                'Generate Copy with AI'
+                            )}
+                        </button>
+                    </div>
+
+                    {/* Error Display */}
+                    {error && (
+                        <div style={{
+                            backgroundColor: '#fee2e2',
+                            border: '1px solid #fca5a5',
+                            borderRadius: '0.5rem',
+                            padding: '1rem',
+                            marginBottom: '1rem',
+                            color: '#991b1b'
+                        }}>
+                            {error}
+                        </div>
+                    )}
+
+                    {/* Generated Copy Display */}
+                    {generatedCopy && (
+                        <div style={{
+                            backgroundColor: '#f9fafb',
+                            border: '2px solid #e5e7eb',
+                            borderRadius: '0.75rem',
+                            padding: '1.5rem'
+                        }}>
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: '1rem'
+                            }}>
+                                <h2 style={{
+                                    fontSize: '1.125rem',
+                                    fontWeight: '600',
+                                    margin: 0
+                                }}>
+                                    Generated Copy
+                                </h2>
+                                <button
+                                    onClick={copyToClipboard}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        backgroundColor: 'white',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '0.375rem',
+                                        padding: '0.5rem 1rem',
+                                        fontSize: '0.875rem',
+                                        fontWeight: '500',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {copied ? (
+                                        <>
+                                            <Check size={16} />
+                                            Copied!
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Copy size={16} />
+                                            Copy
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                            
+                            <div style={{
+                                lineHeight: '1.75',
+                                color: '#1f2937',
+                                margin: 0,
+                                fontSize: '1rem'
+                            }}>
+                                {generatedCopy.split('\n').map((line, index) => {
+                                    if (line.startsWith('HEADLINE:')) {
+                                        return (
+                                            <div key={index} style={{ marginBottom: '1.5rem' }}>
+                                                <div style={{ 
+                                                    fontSize: '0.75rem', 
+                                                    fontWeight: '600', 
+                                                    color: '#6b7280',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.05em',
+                                                    marginBottom: '0.5rem'
+                                                }}>
+                                                    Headline
+                                                </div>
+                                                <div style={{ 
+                                                    fontSize: '1.5rem', 
+                                                    fontWeight: '700', 
+                                                    color: '#111827',
+                                                    lineHeight: '1.3'
+                                                }}>
+                                                    {line.replace('HEADLINE:', '').trim()}
+                                                </div>
+                                            </div>
+                                        );
+                                    } else if (line.startsWith('BODY:')) {
+                                        return (
+                                            <div key={index} style={{ marginTop: '1rem' }}>
+                                                <div style={{ 
+                                                    fontSize: '0.75rem', 
+                                                    fontWeight: '600', 
+                                                    color: '#6b7280',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.05em',
+                                                    marginBottom: '0.5rem'
+                                                }}>
+                                                    Body Copy
+                                                </div>
+                                            </div>
+                                        );
+                                    } else if (line.trim()) {
+                                        return <p key={index} style={{ margin: '0 0 0.75rem 0' }}>{line}</p>;
+                                    }
+                                    return null;
+                                })}
+                            </div>
+
+                            <div style={{
+                                marginTop: '1.5rem',
+                                paddingTop: '1.5rem',
+                                borderTop: '1px solid #e5e7eb'
+                            }}>
+                                <p style={{
+                                    fontSize: '0.875rem',
+                                    color: '#6b7280',
+                                    fontStyle: 'italic',
+                                    margin: 0
+                                }}>
+                                    AI-generated copy based on your campaign context. Review and adjust as needed. The AI read your event/campaign description to inform language and themes without repeating it.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<DonationCopyAIGenerator />);
+    </script>
+</body>
+</html>
